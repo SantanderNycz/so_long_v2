@@ -5,12 +5,12 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: lsantand <lsantand@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/09/15 17:20:53 by lsantand          #+#    #+#             */
-/*   Updated: 2025/09/15 17:20:54 by lsantand         ###   ########.fr       */
+/*   Created: 2025/09/15 17:19:37 by lsantand          #+#    #+#             */
+/*   Updated: 2025/09/15 17:19:38 by lsantand         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../includes/so_long.h"
+#include "../includes_bonus/so_long.h"
 
 int	put_image(t_game game, char c, int x, int y)
 {
@@ -29,6 +29,14 @@ int	put_image(t_game game, char c, int x, int y)
 		img = game.assets.player;
 	if (c == 'E')
 		img = game.assets.exit;
+	if (c == 'R')
+		img = game.assets.enemy_0;
+	if (c == 'T')
+		img = game.assets.enemy_1;
+	if (c == 'Y')
+		img = game.assets.enemy_2;
+	if (c == 'U')
+		img = game.assets.enemy_3;
 	mlx_put_image_to_window(game.mlx, game.mlx_win, img, x, y);
 	return (0);
 }

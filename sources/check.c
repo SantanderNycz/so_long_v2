@@ -5,12 +5,12 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: lsantand <lsantand@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/09/15 17:21:12 by lsantand          #+#    #+#             */
-/*   Updated: 2025/09/26 18:07:54 by lsantand         ###   ########.fr       */
+/*   Created: 2025/09/15 17:20:18 by lsantand          #+#    #+#             */
+/*   Updated: 2025/09/26 18:39:02 by lsantand         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../includes/so_long.h"
+#include "../includes_bonus/so_long.h"
 
 int	check_enclosure(char *map)
 {
@@ -62,8 +62,8 @@ int	check_charactere(char *map)
 
 	i = -1;
 	while (map[++i])
-		if (map[i] != '1' && map[i] != '0' && map[i] != 'C' \
-&& map[i] != 'P' && map[i] != 'E' && map[i] != '\n')
+		if (map[i] != '1' && map[i] != '0' && map[i] != 'C' && map[i] != 'P' \
+&& map[i] != 'E' && map[i] != '\n')
 			return (EXIT_FAILURE);
 	return (EXIT_SUCCESS);
 }

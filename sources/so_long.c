@@ -5,12 +5,12 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: lsantand <lsantand@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/09/15 17:20:47 by lsantand          #+#    #+#             */
-/*   Updated: 2025/09/26 18:16:11 by lsantand         ###   ########.fr       */
+/*   Created: 2025/09/15 17:19:29 by lsantand          #+#    #+#             */
+/*   Updated: 2025/09/15 17:19:34 by lsantand         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../includes/so_long.h"
+#include "../includes_bonus/so_long.h"
 
 int	close_program(t_game *game)
 {
@@ -31,8 +31,7 @@ int	close_program(t_game *game)
 		close_img(game);
 		close_img_wall(game);
 		mlx_destroy_window(game->mlx, game->mlx_win);
-		if (game->mlx)
-			mlx_destroy_display(game->mlx);
+		mlx_destroy_display(game->mlx);
 		free(game->mlx);
 	}
 	exit(0);
@@ -57,7 +56,7 @@ int	key_press(int keycode, t_game *game)
 void	check_event(t_game *game)
 {
 	mlx_hook(game->mlx_win, 17, 1L << 17, close_program, game);
-	mlx_hook(game->mlx_win, 2, 1L << 0, key_press, game);
+	mlx_key_hook(game->mlx_win, key_press, game);
 }
 
 int	main(int argc, char **argv)
@@ -81,7 +80,9 @@ int	main(int argc, char **argv)
 			game.map_h * 96, "So long");
 	if (!game.mlx_win)
 		return (close_program(&game), 1);
+	add_enemy(&game);
 	fill_win(game);
 	check_event(&game);
+	mlx_loop_hook(game.mlx, loop_animations, &game);
 	mlx_loop(game.mlx);
 }

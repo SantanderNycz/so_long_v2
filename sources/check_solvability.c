@@ -5,12 +5,12 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: lsantand <lsantand@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/09/15 17:21:25 by lsantand          #+#    #+#             */
-/*   Updated: 2025/09/26 18:30:02 by lsantand         ###   ########.fr       */
+/*   Created: 2025/09/15 17:20:29 by lsantand          #+#    #+#             */
+/*   Updated: 2025/09/26 18:39:36 by lsantand         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../includes/so_long.h"
+#include "../includes_bonus/so_long.h"
 
 char	*spread(char *mapcpy, int pos, int *nb_to_find)
 {

@@ -5,12 +5,12 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: lsantand <lsantand@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/09/15 17:21:03 by lsantand          #+#    #+#             */
-/*   Updated: 2025/09/15 17:21:04 by lsantand         ###   ########.fr       */
+/*   Created: 2025/09/15 17:19:48 by lsantand          #+#    #+#             */
+/*   Updated: 2025/09/15 17:19:50 by lsantand         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../includes/so_long.h"
+#include "../includes_bonus/so_long.h"
 
 int	get_map_size(t_game *game, char *filename)
 {

@@ -5,8 +5,8 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: lsantand <lsantand@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/09/08 20:42:04 by lsantand          #+#    #+#             */
-/*   Updated: 2025/09/26 17:34:35 by lsantand         ###   ########.fr       */
+/*   Created: 2025/09/08 20:44:23 by lsantand          #+#    #+#             */
+/*   Updated: 2025/09/26 18:37:31 by lsantand         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,6 +22,9 @@
 # define ER_MAPLEN "Todas as linhas do mapa deve ter o mesmo comprimento.\n"
 # define ER_WALL "O mapa deve ser fechado por paredes em todos os lados.\n"
 # define ER_RESOLVE "O mapa não pode ser resolvido.\n"
+# define WARN_NO_ENEMY "O mapa pode não ter inimigo, mas será iniciado.\n"
+# define WIN "Você ganhou, mizerávi!\n"
+# define DEATH "Morreu, abestado!\n"
 
 # include <unistd.h>
 # include <stdlib.h>
@@ -41,6 +44,10 @@ typedef struct s_assets
 	void	*chest;
 	void	*exit;
 	void	*player;
+	void	*enemy_0;
+	void	*enemy_1;
+	void	*enemy_2;
+	void	*enemy_3;
 	void	*wall_bl;
 	void	*wall_br;
 	void	*wall_tl;
@@ -63,8 +70,14 @@ typedef struct s_game
 	int			move;
 	int			collect;
 	int			player_pos;
+	int			loop_state;
 	t_assets	assets;
 }				t_game;
+
+// -------------------------------------------------------------- animation.c --
+
+int		anime_enemy(t_game *game, int anim_state);
+int		loop_animations(t_game *game);
 
 // ------------------------------------------------------ check_solvability.c --
 
@@ -77,6 +90,13 @@ int		check_enclosure(char *map);
 int		check_charactere(char *map);
 int		check_integrity(char *map);
 int		check_map(t_game *game, char *filename);
+
+// ------------------------------------------------------------ enemy_funct.c --
+
+int		enemy_can_be_place(int i, char *m);
+int		add_enemy(t_game *game);
+char	*move_enemy(t_game *game, int from, char state, char *map_cpy);
+int		change_enemys_pos(t_game *game);
 
 // ------------------------------------------------------------------- imgs.c --
 
@@ -92,7 +112,10 @@ int		get_map(t_game *game, char *file);
 // ------------------------------------------------------------------- move.c --
 
 int		move_check(t_game *game, char direction);
-int		move_player(t_game game, int from_pos, char direction);
+int		update_diplayed_move(t_game *game);
+int		move_player_set_datas(t_game *game, int from_pos, int x, int y);
+int		update_x_y(char direction, int i, int *x, int *y);
+int		move_player(t_game *game, int from_pos, char direction);
 
 // ----------------------------------------------------------------- render.c --
 
