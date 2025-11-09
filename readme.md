@@ -1,139 +1,212 @@
-# 🧩 So_long — A 2D Adventure Game in C
+# So Long - Versão Corrigida com Raylib
 
-A minimalist top-down 2D game built entirely in **C** with the **MiniLibX** graphics library.  
-Originally developed as part of the **42 curriculum**, this version includes extended features such as enemy AI, multiple levels, and a built-in timer system.
+Projeto de jogo 2D top-down desenvolvido em C com a biblioteca gráfica Raylib.
 
----
+## 🔧 Correções Realizadas
 
-## 🚀 Features
+### 1. **Headers Corrigidos**
 
-- 🧍‍♂️ **Player Movement** — Smooth movement in four directions using arrow keys.
-- 🪙 **Collectibles** — Gather all items to unlock the exit.
-- 🧟 **Enemies** — Avoid moving enemies that chase or patrol around the map.
-- ⏱️ **Timer System** — Displays elapsed time since the start of the level.
-- 🌍 **Multiple Levels** — Automatically loads the next map when a level is completed.
-- 🗺️ **Custom Map Parser** — Validates `.ber` map files for errors before loading.
-- 💥 **Game Over & Victory Screens** — Dedicated scenes for win and loss conditions.
-- 🧰 **Modular Structure** — Clean separation between rendering, input, game logic, and map handling.
+- Substituído `mlx.h` por `raylib.h`
+- Todas as estruturas e funções declaradas corretamente
+- Tipos de dados consistentes (Position, Player, Enemy, Map, etc.)
 
----
+### 2. **Ponteiros e Memória**
 
-## 🎮 Gameplay
+- Alocação e liberação de memória corrigida em `map.c`
+- Ponteiros de string tratados adequadamente com `strdup()`
+- Liberação de memória em `map_free()` e `game_free()`
 
-Your goal is simple:  
-Collect all items, avoid enemies, and reach the exit to move to the next level.
+### 3. **Makefile**
 
-| Key     | Action                    |
-| ------- | ------------------------- |
-| `W / ↑` | Move Up                   |
-| `A / ←` | Move Left                 |
-| `S / ↓` | Move Down                 |
-| `D / →` | Move Right                |
-| `R`     | Restart the current level |
-| `ESC`   | Quit the game             |
+- Flags corrigidas para raylib
+- Suporte para Linux e macOS
+- Links de bibliotecas corretos
 
----
+### 4. **Estrutura do Código**
 
-## 🗺️ Maps
+- Separação clara entre módulos
+- Funções bem definidas com protótipos no header
+- Sistema modular (map, player, enemy, render, input, timer)
 
-Each level is defined in a `.ber` file located inside the `maps/` folder.  
-Example:
+## 📦 Instalação
+
+### Linux (Ubuntu/Debian)
 
 ```bash
-	111111
-	1P0C01
-	1010E1
-	100001
-	111111
+# Instalar dependências
+sudo apt update
+sudo apt install build-essential git
+sudo apt install libasound2-dev mesa-common-dev libx11-dev libxrandr-dev libxi-dev xorg-dev libgl1-mesa-dev libglu1-mesa-dev
+
+# Instalar Raylib
+git clone https://github.com/raysan5/raylib.git
+cd raylib/src/
+make PLATFORM=PLATFORM_DESKTOP
+sudo make install
+cd ../..
 ```
 
-Legend:
+### macOS
 
-- `1` → Wall
-- `0` → Empty space
-- `P` → Player start
-- `C` → Collectible
-- `E` → Exit
-- `X` → Enemy _(optional)_
+```bash
+# Instalar Homebrew se não tiver
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-To create new levels, simply add more `.ber` files (e.g. `level1.ber`, `level2.ber`, …).
+# Instalar Raylib
+brew install raylib
+```
 
----
+### Windows (MinGW)
 
-## 🧱 Building the Game
+```bash
+# Baixar Raylib pré-compilado
+# https://github.com/raysan5/raylib/releases
 
-Clone the repository and compile with `make`:
+# Extrair e adicionar ao PATH
+```
 
-````bash
-git clone https://github.com/<yourusername>/so_long.git
-cd so_long
+## 🚀 Compilação
+
+```bash
+# Clonar o repositório
+git clone [seu-repositório]
+cd so_long_v2
+
+# Criar diretório de mapas
+mkdir -p maps
+
+# Criar mapa de exemplo (level1.ber)
+# Use o conteúdo fornecido no arquivo maps/level1.ber
+
+# Compilar
 make
+
+# Executar
 ./so_long maps/level1.ber
-
-- Make sure MiniLibX is properly installed on your system.
--- For Linux:
-
-```bash
-	sudo apt install libmlx-dev libxext-dev libx11-dev
 ```
 
-## 🧩 Project Structure
+## 🎮 Controles
 
-```bash
+| Tecla | Ação                |
+| ----- | ------------------- |
+| W / ↑ | Mover para cima     |
+| S / ↓ | Mover para baixo    |
+| A / ← | Mover para esquerda |
+| D / → | Mover para direita  |
+| R     | Reiniciar nível     |
+| ESC   | Sair do jogo        |
+
+## 🗺️ Formato do Mapa (.ber)
+
+```
+1111111
+1P0C001
+1000X01
+1C00E01
+1111111
+```
+
+**Legenda:**
+
+- `1` - Parede
+- `0` - Espaço vazio
+- `P` - Posição inicial do jogador
+- `C` - Coletável
+- `E` - Saída
+- `X` - Inimigo (opcional)
+
+### Regras do Mapa:
+
+- Deve ser retangular
+- Cercado por paredes (`1`)
+- Ter exatamente 1 jogador (`P`)
+- Ter exatamente 1 saída (`E`)
+- Ter pelo menos 1 coletável (`C`)
+
+## 📁 Estrutura do Projeto
+
+```
 so_long/
 ├── includes/
-│   └── so_long.h
+│   └── so_long.h          # Header principal
 ├── src/
-│   ├── main.c
-│   ├── render.c
-│   ├── input.c
-│   ├── map.c
-│   ├── enemy.c
-│   ├── timer.c
-│   └── level_manager.c
-├── assets/
-│   ├── player/
-│   ├── enemy/
-│   ├── tiles/
-│   └── ui/
-└── maps/
-    ├── level1.ber
-    ├── level2.ber
-    └── ...
+│   ├── main.c             # Ponto de entrada
+│   ├── game.c             # Lógica principal
+│   ├── map.c              # Carregamento e validação de mapas
+│   ├── player.c           # Controle do jogador
+│   ├── enemy.c            # IA dos inimigos
+│   ├── render.c           # Sistema de renderização
+│   ├── input.c            # Tratamento de entrada
+│   └── timer.c            # Sistema de timer
+├── maps/
+│   └── level1.ber         # Mapa de exemplo
+├── Makefile               # Script de compilação
+└── README.md              # Este arquivo
 ```
 
-## 🧠 Technical Highlights
+## 🐛 Solução de Problemas
 
-- Language: C
+### Erro: "raylib.h not found"
 
-- Graphics: MiniLibX (X11)
+```bash
+# Linux
+sudo ldconfig
+export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 
-- Paradigm: Event-driven rendering loop
+# macOS
+brew reinstall raylib
+```
 
-- Memory Safety: Manual management with error handling for leaks
+### Erro: "undefined reference to 'InitWindow'"
 
-- Cross-map logic: Loads levels dynamically via array of file paths
+```bash
+# Verificar se raylib está instalada corretamente
+pkg-config --libs raylib
 
-## 🏁 Next Steps
+# Se não funcionar, reinstalar raylib
+```
 
-- Planned or possible future upgrades:
+### Erro ao carregar mapa
 
--- 🎨 Animated tiles and smoother transitions between maps
+- Verifique se o arquivo .ber existe
+- Confirme que o mapa segue as regras (retangular, cercado por paredes, etc.)
+- Verifique permissões do arquivo
 
--- 🧭 Dynamic minimap system
+## 🎯 Objetivos do Jogo
 
--- 🎵 Background music and sound effects
+1. Coletar todos os itens (`C`) no mapa
+2. Evitar os inimigos (`X`)
+3. Chegar à saída (`E`)
+4. Completar no menor tempo e movimentos possíveis
 
--- ⚙️ Map editor (CLI or graphical)
+## 📝 Notas Técnicas
 
--- 🧮 Enemy pathfinding with BFS / A\*
+- **Linguagem**: C (C99)
+- **Biblioteca Gráfica**: Raylib 5.0+
+- **FPS**: 60
+- **Tamanho do Tile**: 64x64 pixels
 
-## 👨‍💻 Author
+## 🔄 Diferenças da versão MiniLibX
 
-- Leonardo Santander Nycz
-  --🎓 Student at 42 Porto
+- Substituída MiniLibX por Raylib (mais portável)
+- Sistema de renderização simplificado
+- Melhor gerenciamento de texturas
+- Suporte nativo para Windows, Linux e macOS
 
-- 💻 GitHub: SantanderNycz
+## 👨‍💻 Desenvolvimento
 
-- 🎶 Music Projects: Bemvirá
-````
+Para adicionar novos recursos:
+
+1. **Novos tiles**: Edite `TileType` enum em `so_long.h`
+2. **Nova lógica**: Adicione em `game.c` ou crie novo módulo
+3. **Texturas**: Carregue em `game_load_textures()`
+4. **Renderização**: Modifique `render_game()` em `render.c`
+
+## 📄 Licença
+
+Projeto educacional desenvolvido como parte do currículo da 42.
+
+---
+
+**Autor**: Leonardo Santander Nycz  
+**GitHub**: @SantanderNycz

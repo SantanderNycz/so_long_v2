@@ -1,158 +1,137 @@
 #ifndef SO_LONG_H
-# define SO_LONG_H
+#define SO_LONG_H
 
-# define ER_NAME "O nome fornecido como parametro está incorreto.\n"
-# define ER_NOMAP "O mapa não pode ser carregado.\n"
-# define ER_MAPCHAR "O mapa contém caracteres inválidos.\n"
-# define ER_NOSTART "O mapa deve conter uma posicao de partida\n"
-# define ER_NOEND "O mapa deve conter uma saída.\n"
-# define ER_NOCOL "O mapa deve conter ao menos um coletável.\n"
-# define ER_MAPLEN "Todas as linhas do mapa deve ter o mesmo comprimento.\n"
-# define ER_WALL "O mapa deve ser fechado por paredes em todos os lados.\n"
-# define ER_RESOLVE "O mapa não pode ser resolvido.\n"
-# define WARN_NO_ENEMY "O mapa pode não ter inimigo, mas será iniciado.\n"
-# define WIN "Você ganhou, mizerávi!\n"
-# define DEATH "Morreu, abestado!\n"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
+#include <time.h>
+#include "raylib.h"
 
-# include <fcntl.h>
-/*# include "../Libft/libft.h"*/
-# include <math.h>
-# include <stdio.h>
+// Constantes
+#define TILE_SIZE 64
+#define MAX_LEVELS 10
+#define MAX_ENEMIES 20
+#define PLAYER_SPEED 4
+#define ENEMY_SPEED 2
 
-// Key macros (defina no so_long.h)
-#define ESC_KEY KEY_ESCAPE
-#define UP_KEY  KEY_W
-#define DOWN_KEY KEY_S
-#define LEFT_KEY KEY_A
-#define RIGHT_KEY KEY_D
-#define SPACE_KEY KEY_SPACE
+// Tipos de tiles
+typedef enum {
+    TILE_EMPTY = '0',
+    TILE_WALL = '1',
+    TILE_PLAYER = 'P',
+    TILE_COLLECTIBLE = 'C',
+    TILE_EXIT = 'E',
+    TILE_ENEMY = 'X'
+} TileType;
 
-// Color macros
-#define WHITE_COLOR WHITE
+// Estados do jogo
+typedef enum {
+    GAME_MENU,
+    GAME_PLAYING,
+    GAME_WIN,
+    GAME_OVER
+} GameState;
 
-typedef struct s_assets
-{
-	Texture2D	bg_2_1;
-	Texture2D	bg_2_2;
-	Texture2D	bg_2_3;
-	Texture2D	bg_1;
-	Texture2D	chest_o;
-	Texture2D	chest;
-	Texture2D	exit;
-	Texture2D	player;
-	Texture2D	enemy_0;
-	Texture2D	enemy_1;
-	Texture2D	enemy_2;
-	Texture2D	enemy_3;
-	Texture2D	wall_bl;
-	Texture2D	wall_br;
-	Texture2D	wall_tl;
-	Texture2D	wall_tr;
-	Texture2D	wall_t;
-	Texture2D	wall_b;
-	Texture2D	wall_l;
-	Texture2D	wall_r;
-	Texture2D	wall;
-}	t_assets;
+// Estrutura de posição
+typedef struct {
+    int x;
+    int y;
+} Position;
 
-typedef struct s_game
-{
-	int			game_state;
-	char		*map;
-	int			map_w;
-	int			map_h;
-	int			move;
-	int			collect;
-	int			player_pos;
-	int			loop_state;
-	t_assets	assets;
-}	t_game;
+// Estrutura do jogador
+typedef struct {
+    Position pos;
+    Position startPos;
+    int collectibles;
+    int moves;
+    Texture2D texture;
+} Player;
 
-// -------------------------------------------------------------- animation.c --
+// Estrutura do inimigo
+typedef struct {
+    Position pos;
+    Position target;
+    bool active;
+    float moveTimer;
+    Texture2D texture;
+} Enemy;
 
-int		anime_enemy(t_game *game, int anim_state);
-int		loop_animations(t_game *game);
+// Estrutura do mapa
+typedef struct {
+    char **grid;
+    int width;
+    int height;
+    int totalCollectibles;
+    char *filename;
+} Map;
 
-// ------------------------------------------------------ check_solvability.c --
+// Estrutura do timer
+typedef struct {
+    double startTime;
+    double elapsedTime;
+    bool running;
+} GameTimer;
 
-char	*spread(char *mapcpy, int pos, int *nb_to_find);
-int		check_map_can_be_solved(char *map, t_game *game);
+// Estrutura principal do jogo
+typedef struct {
+    Map map;
+    Player player;
+    Enemy enemies[MAX_ENEMIES];
+    int enemyCount;
+    GameState state;
+    GameTimer timer;
+    int currentLevel;
+    char *levelFiles[MAX_LEVELS];
+    int totalLevels;
+    Texture2D textures[6]; // wall, floor, collectible, exit, player, enemy
+    bool exitOpen;
+} Game;
 
-// ------------------------------------------------------------------ check.c --
+// Funções de mapa
+bool map_load(Map *map, const char *filename);
+void map_free(Map *map);
+bool map_validate(Map *map);
+char map_get_tile(Map *map, int x, int y);
+void map_set_tile(Map *map, int x, int y, char tile);
 
-int		check_enclosure(char *map);
-int		check_charactere(char *map);
-int		check_integrity(char *map);
-int		check_map(t_game *game, char *filename);
+// Funções do jogador
+void player_init(Player *player, int x, int y);
+void player_move(Game *game, int dx, int dy);
+void player_reset(Game *game);
 
-// ------------------------------------------------------------ enemy_funct.c --
+// Funções de inimigo
+void enemy_init(Enemy *enemy, int x, int y);
+void enemy_update(Game *game);
+void enemy_chase_player(Enemy *enemy, Position playerPos);
+bool check_collision_with_enemies(Game *game, int x, int y);
 
-int		enemy_can_be_place(int i, char *m);
-int		add_enemy(t_game *game);
-char	*move_enemy(t_game *game, int from, char state, char *map_cpy);
-int		change_enemys_pos(t_game *game);
+// Funções de renderização
+void render_game(Game *game);
+void render_ui(Game *game);
+void render_menu(Game *game);
+void render_game_over(Game *game);
+void render_victory(Game *game);
 
-// ------------------------------------------------------------------- imgs.c --
+// Funções de entrada
+void handle_input(Game *game);
 
-int		open_imgs(void *mlx, t_game *game);
-int		close_img(t_game *g);
-int		close_img_wall(t_game *g);
+// Funções do timer
+void timer_start(GameTimer *timer);
+void timer_stop(GameTimer *timer);
+void timer_update(GameTimer *timer);
+void timer_reset(GameTimer *timer);
 
-// ------------------------------------------------------------- maps_funct.c --
+// Funções do gerenciador de níveis
+void level_manager_init(Game *game);
+bool level_manager_load_next(Game *game);
+void level_manager_reset(Game *game);
 
-int		get_map_size(t_game *game, char *filename);
-int		get_map(t_game *game, char *file);
+// Funções principais
+void game_init(Game *game);
+void game_load_textures(Game *game);
+void game_free(Game *game);
+void game_update(Game *game);
+void game_restart_level(Game *game);
 
-// ------------------------------------------------------------------- move.c --
-
-int		move_check(t_game *game, char direction);
-int		update_diplayed_move(t_game *game);
-int		move_player_set_datas(t_game *game, int from_pos, int x, int y);
-int		update_x_y(char direction, int i, int *x, int *y);
-int		move_player(t_game *game, int from_pos, char direction);
-
-// ----------------------------------------------------------------- render.c --
-
-int		put_image(t_game *game, char c, int x, int y); // atualizada para RayLib
-int		fill_win(t_game *game); // atualizada para RayLib
-Texture2D	get_wall(t_game *game, int x, int y); // atualizada para RayLib
-
-// ---------------------------------------------------------------- so_long.c --
-
-int		close_program(t_game *game);
-int		(int keycode, t_game *game);
-void	check_event(t_game *game);
-
-// ------------------------------------------------------------------ utils.c --
-
-int		nb_occurrence(char *str, char c);
-int		line_len(char *str);
-int		get_ind(int pos, char *map, char directions);
-int		find_index(char *map, char to_find);
-void	find_x_y(t_game *game, int i, int *x, int *y); // atualizada para RayLib
-void key_press(t_game *game);
-void update_displayed_move(t_game *game);
-
-#endif
-
-#ifndef RAYLIB_H
-
-# include "raylib.h"
-# include <stdlib.h>
-# include <stdio.h>
-
-/*
- * Provide a minimal Texture2D definition fallback in case raylib.h
- * isn't available in the include path so the header still compiles.
- * If raylib.h is properly included, RAYLIB_H should be defined and
- * this typedef will be skipped.
- */
-typedef struct Texture2D
-{
-	unsigned int id;
-	int width;
-	int height;
-	int mipmaps;
-	int format;
-} Texture2D;
-#endif
+#endif // SO_LONG_H

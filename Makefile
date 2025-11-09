@@ -1,69 +1,71 @@
-# -----------------------
-# Configurações principais
-# -----------------------
-NAME        = so_long.exe
-CC          = gcc
-FLAGS       = -Wall -Wextra -Werror -g3
+# Nome do executável
+NAME = so_long
 
-# Caminho do Raylib (ajusta se instalaste em outro local)
-RAYLIB_PATH = C:/raylib/raylib/src
-RAYLIB_FLAGS = -I$(RAYLIB_PATH) -L$(RAYLIB_PATH) -lraylib -lopengl32 -lgdi32 -lwinmm
+# Compilador e flags
+CC = gcc
+CFLAGS = -Wall -Wextra -Werror -g
+INCLUDES = -I./includes
 
-# -----------------------
-# Fontes e objetos
-# -----------------------
-SRCS = sources/so_long.c \
-       sources/animation.c \
-       sources/check.c \
-       sources/check_solvability.c \
-       sources/utils.c \
-       sources/enemy_funct.c \
-       sources/imgs.c \
-       sources/maps_funct.c \
-       sources/render.c \
-       sources/move.c
+# Raylib
+RAYLIB_FLAGS = -lraylib -lm
 
-OBJS = $(SRCS:sources/%.c=build/%.o)
-HEADER = includes/so_long.h
+# Sistema operacional
+UNAME := $(shell uname -s)
 
-# -----------------------
-# Libft
-# -----------------------
-DIR_LIBFT   = Libft
-LIBFT       = $(DIR_LIBFT)/libft.a
+ifeq ($(UNAME), Linux)
+	RAYLIB_FLAGS += -lGL -lpthread -ldl -lrt -lX11
+endif
 
-# -----------------------
-# Regras principais
-# -----------------------
+ifeq ($(UNAME), Darwin)
+	RAYLIB_FLAGS += -framework OpenGL -framework Cocoa -framework IOKit -framework CoreAudio -framework CoreVideo
+endif
+
+# Diretórios
+SRC_DIR = src
+OBJ_DIR = obj
+
+# Arquivos fonte
+SRCS = $(SRC_DIR)/main.c \
+       $(SRC_DIR)/game.c \
+       $(SRC_DIR)/map.c \
+       $(SRC_DIR)/player.c \
+       $(SRC_DIR)/enemy.c \
+       $(SRC_DIR)/render.c \
+       $(SRC_DIR)/input.c \
+       $(SRC_DIR)/timer.c
+
+# Arquivos objeto
+OBJS = $(SRCS:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
+
+# Cores
+GREEN = \033[0;32m
+RED = \033[0;31m
+RESET = \033[0m
+
+# Regras
 all: $(NAME)
 
-$(NAME): $(OBJS) $(LIBFT)
-	$(CC) $(OBJS) $(LIBFT) $(FLAGS) $(RAYLIB_FLAGS) -o $(NAME)
+$(NAME): $(OBJS)
+	@echo "$(GREEN)Linking $(NAME)...$(RESET)"
+	@$(CC) $(OBJS) $(RAYLIB_FLAGS) -o $(NAME)
+	@echo "$(GREEN)Build complete!$(RESET)"
 
-# Compilação dos objetos
-build/%.o: sources/%.c $(HEADER)
-	@mkdir -p build
-	$(CC) $(FLAGS) -I$(RAYLIB_PATH) -Iincludes -c $< -o $@
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+	@mkdir -p $(OBJ_DIR)
+	@echo "$(GREEN)Compiling $<...$(RESET)"
+	@$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
-# Libft
-$(LIBFT): FORCE
-	$(MAKE) -s -C $(DIR_LIBFT)
-
-# -----------------------
-# Limpeza
-# -----------------------
 clean:
-	$(RM) -r build
+	@echo "$(RED)Cleaning object files...$(RESET)"
+	@rm -rf $(OBJ_DIR)
 
 fclean: clean
-	$(RM) $(NAME)
-	$(MAKE) -s -C $(DIR_LIBFT) clean
+	@echo "$(RED)Removing executable...$(RESET)"
+	@rm -f $(NAME)
 
 re: fclean all
 
-# -----------------------
-# Força rebuild
-# -----------------------
-FORCE:
+run: all
+	./$(NAME) maps/level1.ber
 
-.PHONY: all clean fclean re FORCE
+.PHONY: all clean fclean re run
