@@ -1,0 +1,27 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build Raylib Example",
+      "type": "shell",
+      "command": "gcc",
+      "args": [
+        "C:\\Users\\pc\\Desktop\\Projetos\\so_long_v2.c",
+        "-o",
+        "C:\\Users\\pc\\Desktop\\Projetos\\so_long_v2.exe",
+        "-IC:\\raylib\\raylib\\src",
+        "-LC:\\raylib\\raylib\\src",
+        "-lraylib",
+        "-lopengl32",
+        "-lgdi32",
+        "-lwinmm",
+        "-static"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": ["$gcc"]
+    }
+  ]
+}

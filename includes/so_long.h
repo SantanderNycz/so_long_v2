@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   so_long.h                                          :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: lsantand <lsantand@student.42porto.com>    +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/09/08 20:44:23 by lsantand          #+#    #+#             */
-/*   Updated: 2025/09/26 18:37:31 by lsantand         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 #ifndef SO_LONG_H
 # define SO_LONG_H
 
@@ -26,43 +14,49 @@
 # define WIN "Você ganhou, mizerávi!\n"
 # define DEATH "Morreu, abestado!\n"
 
-# include <unistd.h>
-# include <stdlib.h>
 # include <fcntl.h>
-# include "../minilibx-linux/mlx.h"
-# include "../Libft/libft.h"
+/*# include "../Libft/libft.h"*/
 # include <math.h>
 # include <stdio.h>
 
+// Key macros (defina no so_long.h)
+#define ESC_KEY KEY_ESCAPE
+#define UP_KEY  KEY_W
+#define DOWN_KEY KEY_S
+#define LEFT_KEY KEY_A
+#define RIGHT_KEY KEY_D
+#define SPACE_KEY KEY_SPACE
+
+// Color macros
+#define WHITE_COLOR WHITE
+
 typedef struct s_assets
 {
-	void	*bg_2_1;
-	void	*bg_2_2;
-	void	*bg_2_3;
-	void	*bg_1;
-	void	*chest_o;
-	void	*chest;
-	void	*exit;
-	void	*player;
-	void	*enemy_0;
-	void	*enemy_1;
-	void	*enemy_2;
-	void	*enemy_3;
-	void	*wall_bl;
-	void	*wall_br;
-	void	*wall_tl;
-	void	*wall_tr;
-	void	*wall_t;
-	void	*wall_b;
-	void	*wall_l;
-	void	*wall_r;
-	void	*wall;
-}				t_assets;
+	Texture2D	bg_2_1;
+	Texture2D	bg_2_2;
+	Texture2D	bg_2_3;
+	Texture2D	bg_1;
+	Texture2D	chest_o;
+	Texture2D	chest;
+	Texture2D	exit;
+	Texture2D	player;
+	Texture2D	enemy_0;
+	Texture2D	enemy_1;
+	Texture2D	enemy_2;
+	Texture2D	enemy_3;
+	Texture2D	wall_bl;
+	Texture2D	wall_br;
+	Texture2D	wall_tl;
+	Texture2D	wall_tr;
+	Texture2D	wall_t;
+	Texture2D	wall_b;
+	Texture2D	wall_l;
+	Texture2D	wall_r;
+	Texture2D	wall;
+}	t_assets;
 
 typedef struct s_game
 {
-	void		*mlx;
-	void		*mlx_win;
 	int			game_state;
 	char		*map;
 	int			map_w;
@@ -72,7 +66,7 @@ typedef struct s_game
 	int			player_pos;
 	int			loop_state;
 	t_assets	assets;
-}				t_game;
+}	t_game;
 
 // -------------------------------------------------------------- animation.c --
 
@@ -119,14 +113,14 @@ int		move_player(t_game *game, int from_pos, char direction);
 
 // ----------------------------------------------------------------- render.c --
 
-int		put_image(t_game game, char c, int x, int y);
-int		fill_win(t_game game);
-void	*get_wall(t_game game, int x, int y);
+int		put_image(t_game *game, char c, int x, int y); // atualizada para RayLib
+int		fill_win(t_game *game); // atualizada para RayLib
+Texture2D	get_wall(t_game *game, int x, int y); // atualizada para RayLib
 
 // ---------------------------------------------------------------- so_long.c --
 
 int		close_program(t_game *game);
-int		key_press(int keycode, t_game *game);
+int		(int keycode, t_game *game);
 void	check_event(t_game *game);
 
 // ------------------------------------------------------------------ utils.c --
@@ -135,6 +129,30 @@ int		nb_occurrence(char *str, char c);
 int		line_len(char *str);
 int		get_ind(int pos, char *map, char directions);
 int		find_index(char *map, char to_find);
-int		find_x_y(t_game game, int pos, int *x, int *y);
+void	find_x_y(t_game *game, int i, int *x, int *y); // atualizada para RayLib
+void key_press(t_game *game);
+void update_displayed_move(t_game *game);
 
+#endif
+
+#ifndef RAYLIB_H
+
+# include "raylib.h"
+# include <stdlib.h>
+# include <stdio.h>
+
+/*
+ * Provide a minimal Texture2D definition fallback in case raylib.h
+ * isn't available in the include path so the header still compiles.
+ * If raylib.h is properly included, RAYLIB_H should be defined and
+ * this typedef will be skipped.
+ */
+typedef struct Texture2D
+{
+	unsigned int id;
+	int width;
+	int height;
+	int mipmaps;
+	int format;
+} Texture2D;
 #endif

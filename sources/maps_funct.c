@@ -1,62 +1,36 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   maps_funct.c                                       :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: lsantand <lsantand@student.42porto.com>    +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/09/15 17:19:48 by lsantand          #+#    #+#             */
-/*   Updated: 2025/09/15 17:19:50 by lsantand         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
+#include "../includes/so_long.h"
+#include <stdio.h>
 
-#include "../includes_bonus/so_long.h"
-
-int	get_map_size(t_game *game, char *filename)
+int get_map_size(t_game *game, char *filename)
 {
-	int		fd;
-	char	c;
-	int		i;
-	int		rt_val;
+    FILE *file = fopen(filename, "r");
+    int size = 0;
+    int c;
 
-	i = 0;
-	fd = open(filename, O_RDONLY);
-	if (fd == -1)
-		return (ft_printf_e(ER_NOMAP), close_program(game), 0);
-	rt_val = 1;
-	while (rt_val)
-	{
-		rt_val = read(fd, &c, 1);
-		if (rt_val == -1)
-			return (close_program(game), 0);
-		if (rt_val == 1)
-			i++;
-	}
-	close(fd);
-	return (i);
+    if (!file)
+        return ft_printf_e(ER_NOMAP), close_program(game), 0;
+
+    while ((c = fgetc(file)) != EOF)
+        size++;
+
+    fclose(file);
+    return size;
 }
 
-int	get_map(t_game *game, char *file)
+int get_map(t_game *game, char *file)
 {
-	char	c;
-	int		rt_val;
-	int		fd;
-	int		i;
+    FILE *fp = fopen(file, "r");
+    int c;
+    int i = 0;
 
-	fd = open(file, O_RDONLY);
-	if (fd == -1)
-		return (ft_printf_e(ER_NOMAP), close_program(game), 0);
-	i = 0;
-	rt_val = 1;
-	while (rt_val > 0)
-	{
-		rt_val = read(fd, &c, 1);
-		if (rt_val == -1)
-			return (close_program(game), 0);
-		if (rt_val != 0)
-			game->map[i] = c;
-		i++;
-	}
-	close(fd);
-	return (0);
+    if (!fp)
+        return ft_printf_e(ER_NOMAP), close_program(game), 0;
+
+    while ((c = fgetc(fp)) != EOF)
+    {
+        game->map[i++] = (char)c;
+    }
+
+    fclose(fp);
+    return 0;
 }

@@ -1,71 +1,69 @@
-# **************************************************************************** #
-#                                                                              #
-#                                                         :::      ::::::::    #
-#    Makefile                                           :+:      :+:    :+:    #
-#                                                     +:+ +:+         +:+      #
-#    By: lsantand <lsantand@student.42porto.com>    +#+  +:+       +#+         #
-#                                                 +#+#+#+#+#+   +#+            #
-#    Created: 2025/09/08 20:41:35 by lsantand          #+#    #+#              #
-#    Updated: 2025/11/09 01:35:41 by lsantand         ###   ########.fr        #
-#                                                                              #
-# **************************************************************************** #
+# -----------------------
+# Configurações principais
+# -----------------------
+NAME        = so_long.exe
+CC          = gcc
+FLAGS       = -Wall -Wextra -Werror -g3
 
-NAME			= so_long
-FLAGSE			= -fsanitize=address
-FLAGS			= -Wextra -Werror -Wall -I -g3
+# Caminho do Raylib (ajusta se instalaste em outro local)
+RAYLIB_PATH = C:/raylib/raylib/src
+RAYLIB_FLAGS = -I$(RAYLIB_PATH) -L$(RAYLIB_PATH) -lraylib -lopengl32 -lgdi32 -lwinmm
 
-MLXFLAGS		= -Iminilibx-linux -lXext -lX11 -lm -lz
+# -----------------------
+# Fontes e objetos
+# -----------------------
+SRCS = sources/so_long.c \
+       sources/animation.c \
+       sources/check.c \
+       sources/check_solvability.c \
+       sources/utils.c \
+       sources/enemy_funct.c \
+       sources/imgs.c \
+       sources/maps_funct.c \
+       sources/render.c \
+       sources/move.c
 
-SRCS		=	so_long.c \
-					animation.c \
-					check.c \
-					check_solvability.c \
-					utils.c \
-					enemy_funct.c \
-					imgs.c \
-					maps_funct.c \
-					render.c \
-					move.c
-			
-DIR_MLX 		= minilibx-linux/
-MLX				= $(addprefix $(DIR_MLX), libmlx.a)
+OBJS = $(SRCS:sources/%.c=build/%.o)
+HEADER = includes/so_long.h
 
-DIR_LIBFT		= Libft/
-LIBFT			= $(addprefix $(DIR_LIBFT), libft.a)
+# -----------------------
+# Libft
+# -----------------------
+DIR_LIBFT   = Libft
+LIBFT       = $(DIR_LIBFT)/libft.a
 
-OBJS 			= ${SRCS:%.c=./build/%.o}
+# -----------------------
+# Regras principais
+# -----------------------
+all: $(NAME)
 
-HEADER			= includes/so_long.h
+$(NAME): $(OBJS) $(LIBFT)
+	$(CC) $(OBJS) $(LIBFT) $(FLAGS) $(RAYLIB_FLAGS) -o $(NAME)
 
-all: 			${NAME}
+# Compilação dos objetos
+build/%.o: sources/%.c $(HEADER)
+	@mkdir -p build
+	$(CC) $(FLAGS) -I$(RAYLIB_PATH) -Iincludes -c $< -o $@
 
-${NAME}:		${OBJS} ${LIBFT} ${MLX}
-				${CC} $^ ${FLAGS} ${MLXFLAGS} -o ${NAME}
+# Libft
+$(LIBFT): FORCE
+	$(MAKE) -s -C $(DIR_LIBFT)
 
-./build/%.o:	./sources/%.c ${HEADER}
-				@mkdir -p build
-				${CC} ${FLAGS} -Iminilibx-linux -c $< -o $@
-
-${MLX}:			FORCE
-				make -s -C ${DIR_MLX}
-
-${LIBFT}:		FORCE
-				make -s -C ${DIR_LIBFT}
-
-$(NAME_B):			${OBJS_BONUS} ${LIBFT} ${MLX}
-				${CC} $^ ${FLAGS} ${MLXFLAGS} -o $(NAME_B)
-
+# -----------------------
+# Limpeza
+# -----------------------
 clean:
-				${RM} -r ./build
+	$(RM) -r build
 
-fclean:			clean
-				${RM} ${NAME}
-				make -s -C ${DIR_MLX} clean
-				make -s -C ${DIR_LIBFT} clean
+fclean: clean
+	$(RM) $(NAME)
+	$(MAKE) -s -C $(DIR_LIBFT) clean
 
-re:				fclean
-				${MAKE} all
-			
+re: fclean all
+
+# -----------------------
+# Força rebuild
+# -----------------------
 FORCE:
 
 .PHONY: all clean fclean re FORCE

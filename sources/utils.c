@@ -1,92 +1,104 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   utils.c                                            :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: lsantand <lsantand@student.42porto.com>    +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/09/15 17:17:49 by lsantand          #+#    #+#             */
-/*   Updated: 2025/09/15 17:19:21 by lsantand         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
+#include "../includes/so_long.h"
 
-#include "../includes_bonus/so_long.h"
-
-int	nb_occurrence(char *str, char c)
+int nb_occurrence(char *str, char c)
 {
-	int	i;
-	int	count;
+    int i = 0;
+    int count = 0;
 
-	i = -1;
-	count = 0;
-	while (str[++i])
-		if (str[i] == c)
-			count++;
-	return (count);
+    while (str[i])
+    {
+        if (str[i] == c)
+            count++;
+        i++;
+    }
+    return count;
 }
 
-int	line_len(char *str)
+int line_len(char *str)
 {
-	int	i;
+    int i = 0;
 
-	i = 0;
-	while (str[i++])
-		if (str[i - 1] == '\n')
-			return (i - 1);
-	return (i);
+    while (str[i])
+    {
+        if (str[i] == '\n')
+            return i;
+        i++;
+    }
+    return i;
 }
 
-int	get_ind(int pos, char *map, char directions)
+int get_ind(int pos, char *map, char directions)
 {
-	int	line_l;
+    int line_l = line_len(map) + 1;
 
-	line_l = line_len(map) + 1;
-	if (pos > 0 && map[pos] == '\n')
-		return (-1);
-	if (directions == 't')
-		if (pos > line_l)
-			return (pos - line_l);
-	if (directions == 'b')
-		if (pos > 0 && pos < (int)ft_strlen(map))
-			return (pos + line_l);
-	if (directions == 'l')
-		if (pos - 1 > 0 && map[pos - 1] != '\n')
-			return (pos - 1);
-	if (directions == 'r')
-		if (map[pos + 1] && map[pos + 1] != '\n')
-			return (pos + 1);
-	return (-1);
+    if (pos > 0 && map[pos] == '\n')
+        return -1;
+
+    if (directions == 't' && pos >= line_l)
+        return pos - line_l;
+    if (directions == 'b' && pos + line_l < (int)ft_strlen(map))
+        return pos + line_l;
+    if (directions == 'l' && pos - 1 >= 0 && map[pos - 1] != '\n')
+        return pos - 1;
+    if (directions == 'r' && map[pos + 1] && map[pos + 1] != '\n')
+        return pos + 1;
+
+    return -1;
 }
 
-int	find_index(char *map, char to_find)
+int find_index(char *map, char to_find)
 {
-	int	i;
+    int i = 0;
 
-	i = 0;
-	while (map[i] && map[i] != to_find)
-		i++;
-	if (map[i] == to_find)
-		return (i);
-	return (-1);
+    while (map[i] && map[i] != to_find)
+        i++;
+    if (map[i] == to_find)
+        return i;
+    return -1;
 }
 
-int	find_x_y(t_game game, int pos, int *x, int *y)
+int find_x_y(t_game game, int pos, int *x, int *y)
 {
-	int	i;
+    int i = 0;
+    *x = 0;
+    *y = 0;
 
-	i = 0;
-	*x = 0;
-	*y = 0;
-	while (game.map[i] && i < pos)
-	{
-		if (game.map[i] == '\n')
-		{
-			*y = *y + 1;
-			*x = 0;
-		}
-		else
-			*x = *x + 1;
-		i++;
-	}
-	return (0);
+    while (i < pos && game.map[i])
+    {
+        if (game.map[i] == '\n')
+        {
+            (*y)++;
+            *x = 0;
+        }
+        else
+            (*x)++;
+        i++;
+    }
+    return 0;
+}
+
+// Função para tratar teclas pressionadas
+void key_press(t_game *game)
+{
+    if (IsKeyPressed(ESC_KEY))
+        close_program(game);
+    if (IsKeyPressed(UP_KEY) || IsKeyPressed(KEY_UP) || IsKeyPressed(SPACE_KEY))
+        move_check(game, 't');
+    if (IsKeyPressed(DOWN_KEY) || IsKeyPressed(KEY_DOWN))
+        move_check(game, 'b');
+    if (IsKeyPressed(LEFT_KEY) || IsKeyPressed(KEY_LEFT))
+        move_check(game, 'l');
+    if (IsKeyPressed(RIGHT_KEY) || IsKeyPressed(KEY_RIGHT))
+        move_check(game, 'r');
+}
+
+// Atualiza o contador de movimentos na tela
+void update_displayed_move(t_game *game)
+{
+    char *temp = ft_itoa(game->move + 1);
+    // Desenha um retângulo de fundo para "limpar" o número anterior
+    DrawRectangle(10, 10, 200, 20, BLACK);
+    DrawText("Número de movimentos:", 10, 10, 10, WHITE_COLOR);
+    DrawText(temp, 150, 10, 10, WHITE_COLOR);
+    free(temp);
 }
