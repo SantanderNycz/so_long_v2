@@ -1,109 +1,124 @@
-#include "raylib.h"
 #include "../includes/so_long.h"
 
-int check_enclosure(char *map)
-{
-    int i;
-    int j;
-    int line_l;
-
-    i = -1;
-    line_l = line_len(map);
-    while (++i <= nb_occurrence(map, '\n'))
-    {
-        j = i * (line_l + 1);
-        if (i == 0 || i == nb_occurrence(map, '\n'))
-        {
-            while (j < i * (line_l + 1) + line_l)
-                if (map[j++] != '1')
-                    return EXIT_FAILURE;
+bool check_rectangular(t_map *map) {
+    if (!map || !map->grid)
+        return false;
+    
+    for (int y = 0; y < map->height; y++) {
+        if ((int)ft_strlen(map->grid[y]) != map->width) {
+            printf("Error: Map is not rectangular at line %d\n", y + 1);
+            return false;
         }
-        else if (map[j] != '1' || map[j + line_l - 1] != '1')
-            return EXIT_FAILURE;
     }
-    return EXIT_SUCCESS;
+    return true;
 }
 
-int check_integrity(char *map)
-{
-    int i;
-    int j;
-    int line_l;
-
-    line_l = line_len(map);
-    j = 0;
-    while (j <= nb_occurrence(map, '\n'))
-    {
-        i = 0;
-        while (map[i + j * (line_l + 1)] && map[i + j * (line_l + 1)] != '\n')
-            i++;
-        if (i != line_l)
-            return EXIT_FAILURE;
-        j++;
+bool check_walls(t_map *map) {
+    if (!map || !map->grid)
+        return false;
+    
+    // Verificar primeira e última linha
+    for (int x = 0; x < map->width; x++) {
+        if (map->grid[0][x] != TILE_WALL) {
+            printf("Error: Top wall incomplete at column %d\n", x + 1);
+            return false;
+        }
+        if (map->grid[map->height - 1][x] != TILE_WALL) {
+            printf("Error: Bottom wall incomplete at column %d\n", x + 1);
+            return false;
+        }
     }
-    return EXIT_SUCCESS;
+    
+    // Verificar primeira e última coluna
+    for (int y = 0; y < map->height; y++) {
+        if (map->grid[y][0] != TILE_WALL) {
+            printf("Error: Left wall incomplete at row %d\n", y + 1);
+            return false;
+        }
+        if (map->grid[y][map->width - 1] != TILE_WALL) {
+            printf("Error: Right wall incomplete at row %d\n", y + 1);
+            return false;
+        }
+    }
+    
+    return true;
 }
 
-int check_charactere(char *map)
-{
-    int i;
-
-    i = -1;
-    while (map[++i])
-        if (map[i] != '1' && map[i] != '0' && map[i] != 'C' &&
-            map[i] != 'P' && map[i] != 'E' && map[i] != '\n')
-            return EXIT_FAILURE;
-    return EXIT_SUCCESS;
+bool check_characters(t_map *map) {
+    if (!map || !map->grid)
+        return false;
+    
+    for (int y = 0; y < map->height; y++) {
+        for (int x = 0; x < map->width; x++) {
+            char c = map->grid[y][x];
+            if (c != TILE_EMPTY && c != TILE_WALL && c != TILE_PLAYER &&
+                c != TILE_COLLECTIBLE && c != TILE_EXIT && c != TILE_ENEMY) {
+                printf("Error: Invalid character '%c' at position (%d, %d)\n", c, x + 1, y + 1);
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
-int check_filename(char *filename)
-{
-    int i;
-
-    i = 0;
-    while (filename[i])
-        i++;
-    i--;
-    if (i < 4)
-        return EXIT_FAILURE;
-    if (filename[i] != 'r' || filename[i - 1] != 'e' ||
-        filename[i - 2] != 'b' || filename[i - 3] != '.')
-        return EXIT_FAILURE;
-    if (filename[i - 4] == '/')
-        return EXIT_FAILURE;
-    return EXIT_SUCCESS;
+bool check_elements(t_map *map) {
+    if (!map || !map->grid)
+        return false;
+    
+    int playerCount = 0;
+    int exitCount = 0;
+    int collectibleCount = 0;
+    
+    for (int y = 0; y < map->height; y++) {
+        for (int x = 0; x < map->width; x++) {
+            char tile = map->grid[y][x];
+            
+            if (tile == TILE_PLAYER)
+                playerCount++;
+            else if (tile == TILE_EXIT)
+                exitCount++;
+            else if (tile == TILE_COLLECTIBLE)
+                collectibleCount++;
+        }
+    }
+    
+    if (playerCount != 1) {
+        printf("Error: Map must have exactly 1 player (found %d)\n", playerCount);
+        return false;
+    }
+    
+    if (exitCount != 1) {
+        printf("Error: Map must have exactly 1 exit (found %d)\n", exitCount);
+        return false;
+    }
+    
+    if (collectibleCount < 1) {
+        printf("Error: Map must have at least 1 collectible (found %d)\n", collectibleCount);
+        return false;
+    }
+    
+    map->totalCollectibles = collectibleCount;
+    return true;
 }
 
-int check_map(t_game *game, char *filename)
-{
-    if (check_filename(filename))
-        return (ft_printf_e(ER_NAME), close_program(game));
-
-    game->map = ft_calloc(get_map_size(game, filename) + 1, sizeof(char));
-    if (!game->map)
-        return (close_program(game), 0);
-
-    game->game_state = 1;
-    get_map(game, filename);
-    game->map_h = nb_occurrence(game->map, '\n') + 1;
-    game->map_w = line_len(game->map);
-
-    if (check_charactere(game->map))
-        return (ft_printf_e(ER_MAPCHAR), close_program(game));
-    if (nb_occurrence(game->map, 'P') != 1)
-        return (ft_printf_e(ER_NOSTART), close_program(game));
-    if (nb_occurrence(game->map, 'E') != 1)
-        return (ft_printf_e(ER_NOEND), close_program(game));
-    if (nb_occurrence(game->map, 'C') < 1)
-        return (ft_printf_e(ER_NOCOL), close_program(game));
-    if (check_integrity(game->map))
-        return (ft_printf_e(ER_MAPLEN), close_program(game));
-    if (check_enclosure(game->map))
-        return (ft_printf_e(ER_WALL), close_program(game));
-
-    game->game_state = 2;
-    if (check_map_can_be_solved(game->map, game))
-        return (ft_printf_e(ER_RESOLVE), close_program(game));
-
-    return 0;
+bool check_map_valid(t_map *map) {
+    if (!map) {
+        printf("Error: Map is NULL\n");
+        return false;
+    }
+    
+    if (!check_rectangular(map))
+        return false;
+    
+    if (!check_walls(map))
+        return false;
+    
+    if (!check_characters(map))
+        return false;
+    
+    if (!check_elements(map))
+        return false;
+    
+    map->isValid = true;
+    return true;
 }

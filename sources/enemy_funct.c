@@ -1,94 +1,116 @@
-#include "raylib.h"
 #include "../includes/so_long.h"
 
-int enemy_can_be_place(int i, char *m)
-{
-    if (get_ind(i, m, 'l') != -1 && m[get_ind(i, m, 'l')] == '0' &&
-        get_ind(i, m, 'b') != -1 && m[get_ind(i, m, 'b')] == '0')
-    {
-        if (m[i] == '0' && m[get_ind(get_ind(i, m, 'l'), m, 'b')] == '0')
-        {
-            if (m[get_ind(i, m, 't')] != 'R' &&
-                m[get_ind(get_ind(i, m, 'l'), m, 't')] != 'R')
-            {
-                return 1;
+void enemy_init(t_enemy *enemy, int x, int y) {
+    if (!enemy)
+        return;
+    
+    enemy->pos.x = x;
+    enemy->pos.y = y;
+    enemy->startPos.x = x;
+    enemy->startPos.y = y;
+    enemy->target.x = x;
+    enemy->target.y = y;
+    enemy->active = true;
+    enemy->moveTimer = 0.0f;
+    enemy->direction = 0;
+    
+    animation_init(&enemy->animation, ANIMATION_SPEED);
+}
+
+void enemy_chase_player(t_enemy *enemy, t_position playerPos, t_map *map) {
+    if (!enemy || !map)
+        return;
+    
+    int dx = playerPos.x - enemy->pos.x;
+    int dy = playerPos.y - enemy->pos.y;
+    
+    // Movimento simples em direção ao jogador
+    if (abs(dx) > abs(dy)) {
+        enemy->target.x = enemy->pos.x + (dx > 0 ? 1 : -1);
+        enemy->target.y = enemy->pos.y;
+        enemy->direction = (dx > 0) ? 3 : 2; // right : left
+    } else {
+        enemy->target.x = enemy->pos.x;
+        enemy->target.y = enemy->pos.y + (dy > 0 ? 1 : -1);
+        enemy->direction = (dy > 0) ? 0 : 1; // down : up
+    }
+}
+
+void enemy_update(t_game *game) {
+    if (!game)
+        return;
+    
+    float deltaTime = GetFrameTime();
+    
+    for (int i = 0; i < game->enemyCount; i++) {
+        t_enemy *enemy = &game->enemies[i];
+        
+        if (!enemy->active)
+            continue;
+        
+        // Atualizar animação
+        enemy_animation_update(enemy);
+        
+        enemy->moveTimer += deltaTime;
+        
+        // Mover inimigo a cada 0.5 segundos
+        if (enemy->moveTimer >= 0.5f) {
+            enemy->moveTimer = 0.0f;
+            
+            // Calcular direção para o jogador
+            enemy_chase_player(enemy, game->player.pos, &game->map);
+            
+            // Verificar se o movimento é válido
+            char tile = map_get_tile(&game->map, enemy->target.x, enemy->target.y);
+            
+            if (tile != TILE_WALL && tile != TILE_EXIT) {
+                // Verificar colisão com outros inimigos
+                bool blocked = false;
+                for (int j = 0; j < game->enemyCount; j++) {
+                    if (i != j && 
+                        game->enemies[j].pos.x == enemy->target.x && 
+                        game->enemies[j].pos.y == enemy->target.y) {
+                        blocked = true;
+                        break;
+                    }
+                }
+                
+                if (!blocked) {
+                    enemy->pos = enemy->target;
+                }
             }
         }
     }
-    return 0;
 }
 
-int add_enemy(t_game *game)
-{
-    int i;
-
-    i = -1;
-    while (game->map[++i])
-        if ((rand() % 5) < 1 && enemy_can_be_place(i, game->map))
-            game->map[i] = 'R';
-    if (nb_occurrence(game->map, 'R') == 0)
-        ft_printf_e(WARN_NO_ENEMY);
-    return 0;
-}
-
-int kill_player(t_game *game, int enemy_pos, char *map_cpy)
-{
-    if (enemy_pos == game->player_pos)
-        return (free(map_cpy), ft_printf(DEATH), close_program(game), 0);
-    return 0;
-}
-
-char *move_enemy(t_game *game, int from, char state, char *map_cpy)
-{
-    int x;
-    int y;
-
-    find_x_y(*game, from, &x, &y);
-    DrawRectangle(x * 96, y * 96, 96, 96, BLACK);
-    map_cpy[from] = '0';
-    if (state == 'R')
-    {
-        DrawRectangle(x * 96, y * 96 + 96, 96, 96, RED);
-        kill_player(game, get_ind(from, game->map, 'b'), map_cpy);
-        map_cpy[get_ind(from, game->map, 'b')] = 'r';
+bool check_collision_with_enemies(t_game *game, int x, int y) {
+    if (!game)
+        return false;
+    
+    for (int i = 0; i < game->enemyCount; i++) {
+        if (game->enemies[i].active && 
+            game->enemies[i].pos.x == x && 
+            game->enemies[i].pos.y == y) {
+            printf("\n=== GAME OVER ===\n");
+            printf("You were caught by an enemy!\n");
+            printf("Time: %.2f seconds\n", game->timer.elapsedTime);
+            printf("Moves: %d\n", game->player.moves);
+            printf("=================\n\n");
+            return true;
+        }
     }
-    else if (state == 'r')
-    {
-        DrawRectangle(x * 96 - 96, y * 96, 96, 96, RED);
-        kill_player(game, get_ind(from, game->map, 'l'), map_cpy);
-        map_cpy[get_ind(from, game->map, 'l')] = 'l';
-    }
-    else if (state == 'l')
-    {
-        DrawRectangle(x * 96, y * 96 - 96, 96, 96, RED);
-        kill_player(game, get_ind(from, game->map, 't'), map_cpy);
-        map_cpy[get_ind(from, game->map, 't')] = 'L';
-    }
-    else if (state == 'L')
-    {
-        DrawRectangle(x * 96 + 96, y * 96, 96, 96, RED);
-        kill_player(game, get_ind(from, game->map, 'r'), map_cpy);
-        map_cpy[get_ind(from, game->map, 'r')] = 'R';
-    }
-    return map_cpy;
+    return false;
 }
 
-int change_enemys_pos(t_game *game)
-{
-    char *map_cpy;
-    int i;
-
-    i = -1;
-    map_cpy = ft_strdup(game->map);
-    if (!map_cpy)
-        return (close_program(game), 1);
-    while (game->map[++i])
-        if (game->map[i] == 'R' || game->map[i] == 'r' ||
-            game->map[i] == 'L' || game->map[i] == 'l')
-            if ((rand() % 5) < 3)
-                map_cpy = move_enemy(game, i, game->map[i], map_cpy);
-    free(game->map);
-    game->map = map_cpy;
-    return 0;
+void enemies_reset(t_game *game) {
+    if (!game || !game->enemies)
+        return;
+    
+    for (int i = 0; i < game->enemyCount; i++) {
+        game->enemies[i].pos = game->enemies[i].startPos;
+        game->enemies[i].target = game->enemies[i].startPos;
+        game->enemies[i].active = true;
+        game->enemies[i].moveTimer = 0.0f;
+        game->enemies[i].direction = 0;
+    }
 }
-

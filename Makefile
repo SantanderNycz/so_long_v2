@@ -1,71 +1,62 @@
-# Nome do executável
-NAME = so_long
+# Makefile for Windows (MinGW)
+NAME = so_long.exe
 
-# Compilador e flags
+# Compilador
 CC = gcc
-CFLAGS = -Wall -Wextra -Werror -g
-INCLUDES = -I./includes
+CFLAGS = -Wall -Wextra -O2 -std=c99
+INCLUDES = -I./includes -I./raylib/include
 
-# Raylib
-RAYLIB_FLAGS = -lraylib -lm
-
-# Sistema operacional
-UNAME := $(shell uname -s)
-
-ifeq ($(UNAME), Linux)
-	RAYLIB_FLAGS += -lGL -lpthread -ldl -lrt -lX11
-endif
-
-ifeq ($(UNAME), Darwin)
-	RAYLIB_FLAGS += -framework OpenGL -framework Cocoa -framework IOKit -framework CoreAudio -framework CoreVideo
-endif
+# Raylib para Windows
+RAYLIB_PATH = ./raylib
+RAYLIB_INCLUDE = -I$(RAYLIB_PATH)/include
+RAYLIB_LIB = -L$(RAYLIB_PATH)/lib -lraylib -lopengl32 -lgdi32 -lwinmm
 
 # Diretórios
-SRC_DIR = src
+SRC_DIR = sources
 OBJ_DIR = obj
 
 # Arquivos fonte
-SRCS = $(SRC_DIR)/main.c \
-       $(SRC_DIR)/game.c \
-       $(SRC_DIR)/map.c \
-       $(SRC_DIR)/player.c \
-       $(SRC_DIR)/enemy.c \
-       $(SRC_DIR)/render.c \
-       $(SRC_DIR)/input.c \
-       $(SRC_DIR)/timer.c
+SRCS =	$(SRC_DIR)/animation.c \
+		$(SRC_DIR)/check_solvability.c \
+		$(SRC_DIR)/check.c \
+		$(SRC_DIR)/enemy_funct.c \
+		$(SRC_DIR)/imgs.c \
+		$(SRC_DIR)/maps_function.c \
+		$(SRC_DIR)/move.c \
+		$(SRC_DIR)/render.c \
+		$(SRC_DIR)/so_long.c \
+		$(SRC_DIR)/utils.c
 
 # Arquivos objeto
 OBJS = $(SRCS:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
 
-# Cores
-GREEN = \033[0;32m
-RED = \033[0;31m
-RESET = \033[0m
-
 # Regras
-all: $(NAME)
+all: $(OBJ_DIR) $(NAME)
+	@echo Build complete!
+
+$(OBJ_DIR):
+	@if not exist $(OBJ_DIR) mkdir $(OBJ_DIR)
 
 $(NAME): $(OBJS)
-	@echo "$(GREEN)Linking $(NAME)...$(RESET)"
-	@$(CC) $(OBJS) $(RAYLIB_FLAGS) -o $(NAME)
-	@echo "$(GREEN)Build complete!$(RESET)"
+	@echo Linking $(NAME)...
+	@$(CC) $(OBJS) $(RAYLIB_LIB) -o $(NAME)
+	@echo Done!
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
-	@mkdir -p $(OBJ_DIR)
-	@echo "$(GREEN)Compiling $<...$(RESET)"
-	@$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+	@echo Compiling $<...
+	@$(CC) $(CFLAGS) $(INCLUDES) $(RAYLIB_INCLUDE) -c $< -o $@
 
 clean:
-	@echo "$(RED)Cleaning object files...$(RESET)"
-	@rm -rf $(OBJ_DIR)
+	@if exist $(OBJ_DIR) rmdir /s /q $(OBJ_DIR)
+	@echo Cleaned object files
 
 fclean: clean
-	@echo "$(RED)Removing executable...$(RESET)"
-	@rm -f $(NAME)
+	@if exist $(NAME) del /q $(NAME)
+	@echo Removed executable
 
 re: fclean all
 
 run: all
-	./$(NAME) maps/level1.ber
+	@$(NAME) maps\level1.ber
 
 .PHONY: all clean fclean re run

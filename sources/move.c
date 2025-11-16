@@ -1,88 +1,102 @@
 #include "../includes/so_long.h"
 
-int move_check(t_game *game, char direction)
-{
-    int temp_i = get_ind(game->player_pos, game->map, direction);
-    if (temp_i == -1)
-        return -1;
-    if (game->map[temp_i] == '1')
-        return 0;
-    if (game->map[temp_i] == 'R' || game->map[temp_i] == 'r' || 
-        game->map[temp_i] == 'L' || game->map[temp_i] == 'l')
-        return ft_printf(DEATH), close_program(game), 0;
-    if (game->map[temp_i] == 'C')
-    {
-        game->collect--;
-        move_player(game, game->player_pos, direction);
+void player_init(t_player *player, int x, int y) {
+    if (!player)
+        return;
+    
+    player->pos.x = x;
+    player->pos.y = y;
+    player->startPos.x = x;
+    player->startPos.y = y;
+    player->collectibles = 0;
+    player->moves = 0;
+    player->direction = 0; // down
+    
+    animation_init(&player->animation, ANIMATION_SPEED);
+}
+
+bool can_move(t_game *game, int x, int y) {
+    if (!game)
+        return false;
+    
+    // Verificar colisão com parede
+    char tile = map_get_tile(&game->map, x, y);
+    if (tile == TILE_WALL)
+        return false;
+    
+    // Verificar se pode sair
+    if (tile == TILE_EXIT && !game->exitOpen)
+        return false;
+    
+    return true;
+}
+
+void player_move(t_game *game, int dx, int dy) {
+    if (!game)
+        return;
+    
+    int newX = game->player.pos.x + dx;
+    int newY = game->player.pos.y + dy;
+    
+    // Atualizar direção
+    if (dx > 0)
+        game->player.direction = 3; // right
+    else if (dx < 0)
+        game->player.direction = 2; // left
+    else if (dy > 0)
+        game->player.direction = 0; // down
+    else if (dy < 0)
+        game->player.direction = 1; // up
+    
+    // Verificar se pode mover
+    if (!can_move(game, newX, newY))
+        return;
+    
+    char tile = map_get_tile(&game->map, newX, newY);
+    
+    // Verificar se chegou na saída
+    if (tile == TILE_EXIT && game->exitOpen) {
+        game->state = GAME_WIN;
+        timer_stop(&game->timer);
+        printf("\n=== VICTORY ===\n");
+        printf("Time: %.2f seconds\n", game->timer.elapsedTime);
+        printf("Moves: %d\n", game->player.moves + 1);
+        printf("===============\n\n");
+        return;
     }
-    if (game->map[temp_i] == '0' || game->map[temp_i] == 'P' || 
-        game->map[temp_i] == 'E' || game->map[temp_i] == 'O')
-        move_player(game, game->player_pos, direction);
-    if (game->map[temp_i] == 'E' && game->collect == 0)
-        return ft_printf(WIN), close_program(game), 0;
-    game->player_pos = temp_i;
-    game->move++;
-    return 0;
-}
-
-int update_displayed_move(t_game *game)
-{
-    char *temp;
-    DrawText("Número de movimentos:", 10, 10, 20, WHITE);
-    temp = ft_itoa(game->move + 1);
-    DrawText(temp, 200, 10, 20, WHITE);
-    free(temp);
-    return 0;
-}
-
-int move_player_set_datas(t_game *game, int from_pos, int x, int y)
-{
-    if (game->map[from_pos] == 'C' || game->map[from_pos] == 'O')
-    {
-        DrawTexture(game->assets.chest_o, x, y, WHITE);
-        game->map[from_pos] = 'O';
-    }
-    if (game->map[from_pos] == 'E')
-        DrawTexture(game->assets.exit, x, y, WHITE);
-    return 0;
-}
-
-int update_x_y(char direction, int i, int *x, int *y)
-{
-    int step = 96 / 8;
-    if (i % 1000 != 0)
-        return 0;
-    if (direction == 't')
-        *y -= step;
-    else if (direction == 'b')
-        *y += step;
-    else if (direction == 'r')
-        *x += step;
-    else if (direction == 'l')
-        *x -= step;
-    return 0;
-}
-
-int move_player(t_game *game, int fpos, char direction)
-{
-    int i, x, y, from_x, from_y;
-    find_x_y(*game, fpos, &x, &y);
-    x *= 96; from_x = x;
-    y *= 96; from_y = y;
-    move_player_set_datas(game, fpos, x, y);
-    for (i = 0; i < 8000; i++)
-    {
-        if (i % 1000 == 0)
-        {
-            if (game->map[fpos] == 'C' || game->map[fpos] == 'O')
-                DrawTexture(game->assets.chest_o, from_x, from_y, WHITE);
-            else if (game->map[fpos] == 'E')
-                DrawTexture(game->assets.exit, from_x, from_y, WHITE);
-            else
-                DrawTexture(game->assets.bg_1, from_x, from_y, WHITE);
+    
+    // Verificar se coletou item (agora verifica no array de coletáveis)
+    for (int i = 0; i < game->collectibleCount; i++) {
+        if (!game->collectibles[i].collected &&
+            game->collectibles[i].pos.x == newX &&
+            game->collectibles[i].pos.y == newY) {
+            
+            game->collectibles[i].collected = true;
+            game->collectibles[i].animating = true;
+            game->collectibles[i].animationTime = 0.0f;
+            game->collectibles[i].currentFrame = 1; // Começa na animação
+            game->player.collectibles++;
+            
+            printf("Collected! (%d/%d)\n", game->player.collectibles, game->map.totalCollectibles);
+            break;
         }
-        update_x_y(direction, i, &x, &y);
-        DrawTexture(game->assets.player, x, y, WHITE);
     }
-    return update_displayed_move(game), 0;
+    
+    // Mover jogador
+    game->player.pos.x = newX;
+    game->player.pos.y = newY;
+    game->player.moves++;
+    
+    print_moves(game->player.moves);
+}
+
+void player_reset(t_game *game) {
+    if (!game)
+        return;
+    
+    game->player.pos = game->player.startPos;
+    game->player.collectibles = 0;
+    game->player.moves = 0;
+    game->player.direction = 0;
+    game->exitOpen = false;
 }

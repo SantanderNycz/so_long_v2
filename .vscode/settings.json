@@ -1,0 +1,8 @@
+{
+  "files.associations": {
+    "*.css": "css",
+    "*.js": "javascriptreact",
+    "*.m": "c"
+  },
+  "C_Cpp.errorSquiggles": "disabled"
+}
