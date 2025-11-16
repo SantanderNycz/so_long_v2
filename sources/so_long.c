@@ -1,203 +1,290 @@
-#ifndef SO_LONG_H
-#define SO_LONG_H
+#include "../includes/so_long.h"
 
-// Includes do sistema
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include <time.h>
+void game_init(t_game *game, const char *mapFile) {
+    // Zerar estrutura
+    memset(game, 0, sizeof(t_game));
+    
+    // Carregar mapa
+    if (!map_load(&game->map, mapFile)) {
+        error_exit("Failed to load map");
+    }
+    
+    // Validar mapa
+    if (!check_map_valid(&game->map)) {
+        map_free(&game->map);
+        error_exit("Invalid map");
+    }
+    
+    // Verificar solvability
+    if (!check_solvability(&game->map)) {
+        map_free(&game->map);
+        error_exit("Map is not solvable");
+    }
+    
+    game->state = GAME_PLAYING;
+    game->exitOpen = false;
+    game->enemyCount = 0;
+    game->collectibleCount = 0;
+    
+    // Alocar espaço para inimigos
+    game->enemies = (t_enemy *)malloc(sizeof(t_enemy) * MAX_ENEMIES);
+    if (!game->enemies) {
+        map_free(&game->map);
+        error_exit("Failed to allocate enemies");
+    }
+    
+    // Alocar espaço para coletáveis
+    game->collectibles = (t_collectible *)malloc(sizeof(t_collectible) * game->map.totalCollectibles);
+    if (!game->collectibles) {
+        free(game->enemies);
+        map_free(&game->map);
+        error_exit("Failed to allocate collectibles");
+    }
+    
+    // Encontrar posições de jogador, inimigos e coletáveis
+    for (int y = 0; y < game->map.height; y++) {
+        for (int x = 0; x < game->map.width; x++) {
+            char tile = game->map.grid[y][x];
+            
+            if (tile == TILE_PLAYER) {
+                player_init(&game->player, x, y);
+                game->map.grid[y][x] = TILE_EMPTY;
+            }
+            else if (tile == TILE_ENEMY && game->enemyCount < MAX_ENEMIES) {
+                enemy_init(&game->enemies[game->enemyCount], x, y);
+                game->enemyCount++;
+                game->map.grid[y][x] = TILE_EMPTY;
+            }
+            else if (tile == TILE_COLLECTIBLE) {
+                game->collectibles[game->collectibleCount].pos.x = x;
+                game->collectibles[game->collectibleCount].pos.y = y;
+                game->collectibles[game->collectibleCount].collected = false;
+                game->collectibles[game->collectibleCount].currentFrame = 0;
+                game->collectibles[game->collectibleCount].frameTimer = 0.0f;
+                game->collectibles[game->collectibleCount].animating = false;
+                game->collectibles[game->collectibleCount].animationTime = 0.0f;
+                game->collectibleCount++;
+                game->map.grid[y][x] = TILE_EMPTY;
+            }
+        }
+    }
+    
+    // Iniciar timer
+    timer_start(&game->timer);
+    
+    printf("\n=== Game Initialized ===\n");
+    printf("Map: %dx%d\n", game->map.width, game->map.height);
+    printf("Collectibles: %d\n", game->collectibleCount);
+    printf("Enemies: %d\n", game->enemyCount);
+    printf("=======================\n\n");
+}
 
-// Raylib DEVE ser incluído ANTES de windows.h para evitar conflitos
-#include <raylib.h>
+void game_update(t_game *game) {
+    if (game->state != GAME_PLAYING) {
+        return;
+    }
+    
+    float deltaTime = GetFrameTime();
+    
+    // Atualizar timer
+    timer_update(&game->timer);
+    
+    // Atualizar animações do jogador
+    player_animation_update(&game->player);
+    
+    // Atualizar animações dos inimigos (troca a cada 1 segundo)
+    for (int i = 0; i < game->enemyCount; i++) {
+        if (game->enemies[i].active) {
+            game->enemies[i].animation.frameTimer += deltaTime;
+            if (game->enemies[i].animation.frameTimer >= game->enemies[i].animation.frameSpeed) {
+                game->enemies[i].animation.frameTimer = 0.0f;
+                game->enemies[i].animation.currentFrame = (game->enemies[i].animation.currentFrame + 1) % ENEMY_ANIMATION_FRAMES;
+            }
+        }
+    }
+    
+    // Atualizar animações dos coletáveis
+    for (int i = 0; i < game->collectibleCount; i++) {
+        if (game->collectibles[i].animating) {
+            game->collectibles[i].animationTime += deltaTime;
+            
+            // Frame 1 (animação) por 2 segundos
+            if (game->collectibles[i].animationTime < 2.0f) {
+                game->collectibles[i].currentFrame = 1;
+            } else {
+                // Frame 2 (estado final) após 2 segundos
+                game->collectibles[i].currentFrame = 2;
+                game->collectibles[i].animating = false;
+            }
+        }
+    }
+    
+    // Atualizar inimigos
+    enemy_update(game);
+    
+    // Verificar se coletou todos os itens
+    if (game->player.collectibles >= game->map.totalCollectibles) {
+        game->exitOpen = true;
+    }
+    
+    // Verificar colisão com inimigos
+    if (check_collision_with_enemies(game, game->player.pos.x, game->player.pos.y)) {
+        game->state = GAME_OVER;
+        timer_stop(&game->timer);
+    }
+}
 
-// Define para Windows (depois do raylib para evitar conflitos)
-#if defined(_WIN32)
-    #define PATH_SEPARATOR '\\'
-#else
-    #define PATH_SEPARATOR '/'
-#endif
+void game_restart_level(t_game *game) {
+    // Resetar jogador
+    player_reset(game);
+    
+    // Resetar inimigos
+    enemies_reset(game);
+    
+    // Recarregar mapa
+    char *filename = ft_strdup(game->map.filename);
+    map_free(&game->map);
+    
+    if (!map_load(&game->map, filename)) {
+        free(filename);
+        error_exit("Failed to reload map");
+    }
+    free(filename);
+    
+    // Reinicializar elementos
+    game->enemyCount = 0;
+    for (int y = 0; y < game->map.height; y++) {
+        for (int x = 0; x < game->map.width; x++) {
+            char tile = game->map.grid[y][x];
+            
+            if (tile == TILE_PLAYER) {
+                player_init(&game->player, x, y);
+                game->map.grid[y][x] = TILE_EMPTY;
+            }
+            else if (tile == TILE_ENEMY && game->enemyCount < MAX_ENEMIES) {
+                enemy_init(&game->enemies[game->enemyCount], x, y);
+                game->enemyCount++;
+                game->map.grid[y][x] = TILE_EMPTY;
+            }
+        }
+    }
+    
+    game->state = GAME_PLAYING;
+    game->exitOpen = false;
+    timer_reset(&game->timer);
+    timer_start(&game->timer);
+}
 
-// Constantes
-#define TILE_SIZE 64
-#define MAX_LEVELS 10
-#define MAX_ENEMIES 50
-#define PLAYER_SPEED 4
-#define ENEMY_SPEED 2
-#define ANIMATION_FRAMES 4
-#define ANIMATION_SPEED 0.1f
-#define ENEMY_ANIMATION_FRAMES 3
-#define COLLECTIBLE_ANIMATION_FRAMES 3
+void game_free(t_game *game) {
+    map_free(&game->map);
+    
+    if (game->enemies) {
+        free(game->enemies);
+        game->enemies = NULL;
+    }
+    
+    unload_textures(game);
+}
 
-// Tipos de tiles
-typedef enum {
-    TILE_EMPTY = '0',
-    TILE_WALL = '1',
-    TILE_PLAYER = 'P',
-    TILE_COLLECTIBLE = 'C',
-    TILE_EXIT = 'E',
-    TILE_ENEMY = 'X'
-} TileType;
+void handle_input(t_game *game) {
+    // Reiniciar
+    if (IsKeyPressed(KEY_R)) {
+        game_restart_level(game);
+        return;
+    }
+    
+    if (game->state == GAME_MENU) {
+        if (IsKeyPressed(KEY_ENTER)) {
+            game->state = GAME_PLAYING;
+            timer_start(&game->timer);
+        }
+        return;
+    }
+    
+    if (game->state != GAME_PLAYING) {
+        return;
+    }
+    
+    // Movimento do jogador
+    if (IsKeyPressed(KEY_W) || IsKeyPressed(KEY_UP)) {
+        player_move(game, 0, -1);
+    }
+    else if (IsKeyPressed(KEY_S) || IsKeyPressed(KEY_DOWN)) {
+        player_move(game, 0, 1);
+    }
+    else if (IsKeyPressed(KEY_A) || IsKeyPressed(KEY_LEFT)) {
+        player_move(game, -1, 0);
+    }
+    else if (IsKeyPressed(KEY_D) || IsKeyPressed(KEY_RIGHT)) {
+        player_move(game, 1, 0);
+    }
+}
 
-// Estados do jogo
-typedef enum {
-    GAME_MENU,
-    GAME_PLAYING,
-    GAME_WIN,
-    GAME_OVER
-} GameState;
+int main(int argc, char **argv) {
+    if (argc != 2) {
+        printf("Usage: %s <map_file.ber>\n", argv[0]);
+        return 1;
+    }
 
-// Estrutura de posição
-typedef struct s_position {
-    int x;
-    int y;
-} t_position;
+    t_game game;
+    
+    // Inicializar o jogo
+    game_init(&game, argv[1]);
 
-// Estrutura de animação
-typedef struct s_animation {
-    Texture2D frames[ANIMATION_FRAMES];
-    int currentFrame;
-    float frameTimer;
-    float frameSpeed;
-} t_animation;
+    // Inicializar a janela DEPOIS de carregar o mapa
+    int windowWidth = game.map.width * TILE_SIZE;
+    int windowHeight = game.map.height * TILE_SIZE + 50;
+    
+    InitWindow(windowWidth, windowHeight, "so_long");
+    SetTargetFPS(60);
 
-// Estrutura do jogador
-typedef struct s_player {
-    t_position pos;
-    t_position startPos;
-    int collectibles;
-    int moves;
-    t_animation animation;
-    int direction; // 0=down, 1=up, 2=left, 3=right
-} t_player;
+    // Carregar texturas DEPOIS de inicializar a janela
+    load_textures(&game);
 
-// Estrutura do inimigo
-typedef struct s_enemy {
-    t_position pos;
-    t_position startPos;
-    t_position target;
-    bool active;
-    float moveTimer;
-    t_animation animation;
-    int direction;
-} t_enemy;
+    printf("Window initialized: %dx%d\n", windowWidth, windowHeight);
+    printf("Press WASD or Arrow Keys to move\n");
+    printf("Press R to restart\n");
+    printf("Press ESC to quit\n\n");
 
-// Estrutura do mapa
-typedef struct s_map {
-    char **grid;
-    int width;
-    int height;
-    int totalCollectibles;
-    char *filename;
-    bool isValid;
-    bool isSolvable;
-} t_map;
+    // Loop principal
+    while (!WindowShouldClose()) {
+        // ===== ATUALIZAR =====
+        handle_input(&game);
+        game_update(&game);
 
-// Estrutura do timer
-typedef struct s_timer {
-    double startTime;
-    double elapsedTime;
-    bool running;
-} t_timer;
+        // ===== RENDERIZAR =====
+        BeginDrawing();
+        
+            ClearBackground(BLACK);
+            
+            // Renderizar baseado no estado
+            switch (game.state) {
+                case GAME_MENU:
+                    render_menu(&game);
+                    break;
+                    
+                case GAME_PLAYING:
+                    render_game(&game);
+                    render_ui(&game);
+                    break;
+                    
+                case GAME_WIN:
+                    render_victory(&game);
+                    break;
+                    
+                case GAME_OVER:
+                    render_game_over(&game);
+                    break;
+            }
+        
+        EndDrawing();
+        // ===== FIM DA RENDERIZAÇÃO =====
+    }
 
-// Estrutura de texturas
-typedef struct s_textures {
-    Texture2D wall;
-    Texture2D floor;
-    Texture2D collectible;
-    Texture2D exit_closed;
-    Texture2D exit_open;
-    Texture2D player[ANIMATION_FRAMES];
-    Texture2D enemy[ANIMATION_FRAMES];
-} t_textures;
+    // Limpeza
+    printf("\nCleaning up...\n");
+    game_free(&game);
+    CloseWindow();
 
-// Estrutura principal do jogo
-typedef struct s_game {
-    t_map map;
-    t_player player;
-    t_enemy *enemies;
-    int enemyCount;
-    GameState state;
-    t_timer timer;
-    int currentLevel;
-    char *levelFiles[MAX_LEVELS];
-    int totalLevels;
-    t_textures textures;
-    bool exitOpen;
-    Font font;
-} t_game;
-
-// ==================== FUNÇÕES DE MAPA (maps_function.c) ====================
-bool    map_load(t_map *map, const char *filename);
-void    map_free(t_map *map);
-char    map_get_tile(t_map *map, int x, int y);
-void    map_set_tile(t_map *map, int x, int y, char tile);
-int     map_count_collectibles(t_map *map);
-void    map_print(t_map *map);
-
-// ==================== FUNÇÕES DE VALIDAÇÃO (check.c) ====================
-bool    check_map_valid(t_map *map);
-bool    check_rectangular(t_map *map);
-bool    check_walls(t_map *map);
-bool    check_elements(t_map *map);
-bool    check_characters(t_map *map);
-
-// ==================== FUNÇÕES DE SOLVABILITY (check_solvability.c) ====================
-bool    check_solvability(t_map *map);
-bool    flood_fill_check(t_map *map, int x, int y, bool **visited, int *collectibles, bool *foundExit);
-void    free_visited(bool **visited, int height);
-
-// ==================== FUNÇÕES DO JOGADOR (move.c) ====================
-void    player_init(t_player *player, int x, int y);
-void    player_move(t_game *game, int dx, int dy);
-void    player_reset(t_game *game);
-bool    can_move(t_game *game, int x, int y);
-
-// ==================== FUNÇÕES DE INIMIGO (enemy_funct.c) ====================
-void    enemy_init(t_enemy *enemy, int x, int y);
-void    enemy_update(t_game *game);
-void    enemy_chase_player(t_enemy *enemy, t_position playerPos, t_map *map);
-bool    check_collision_with_enemies(t_game *game, int x, int y);
-void    enemies_reset(t_game *game);
-
-// ==================== FUNÇÕES DE RENDERIZAÇÃO (render.c) ====================
-void    render_game(t_game *game);
-void    render_map(t_game *game);
-void    render_entities(t_game *game);
-void    render_ui(t_game *game);
-void    render_menu(t_game *game);
-void    render_game_over(t_game *game);
-void    render_victory(t_game *game);
-
-// ==================== FUNÇÕES DE ANIMAÇÃO (animation.c) ====================
-void    animation_init(t_animation *anim, float speed);
-void    animation_update(t_animation *anim);
-void    animation_draw(t_animation *anim, int x, int y);
-void    player_animation_update(t_player *player);
-void    enemy_animation_update(t_enemy *enemy);
-
-// ==================== FUNÇÕES DE IMAGENS (imgs.c) ====================
-void    load_textures(t_game *game);
-void    unload_textures(t_game *game);
-Texture2D create_colored_texture(int width, int height, Color color);
-void    load_player_textures(t_game *game);
-void    load_enemy_textures(t_game *game);
-
-// ==================== FUNÇÕES PRINCIPAIS (so_long.c) ====================
-void    game_init(t_game *game, const char *mapFile);
-void    game_update(t_game *game);
-void    game_restart_level(t_game *game);
-void    game_free(t_game *game);
-void    handle_input(t_game *game);
-
-// ==================== FUNÇÕES UTILITÁRIAS (utils.c) ====================
-void    timer_start(t_timer *timer);
-void    timer_stop(t_timer *timer);
-void    timer_update(t_timer *timer);
-void    timer_reset(t_timer *timer);
-char    *ft_strdup(const char *s);
-size_t  ft_strlen(const char *s);
-void    error_exit(const char *message);
-void    print_moves(int moves);
-
-#endif // SO_LONG_H
+    return 0;
+}

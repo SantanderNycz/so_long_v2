@@ -93,6 +93,16 @@ typedef struct s_map {
     bool isSolvable;
 } t_map;
 
+// Estrutura de coletável
+typedef struct s_collectible {
+    t_position pos;
+    bool collected;
+    bool animating;
+    float animationTime;
+    float frameTimer;
+    int currentFrame;
+} t_collectible;
+
 // Estrutura do timer
 typedef struct s_timer {
     double startTime;
@@ -104,12 +114,13 @@ typedef struct s_timer {
 typedef struct s_textures {
     Texture2D wall;
     Texture2D floor;
-    Texture2D collectible;
+    Texture2D collectible[COLLECTIBLE_ANIMATION_FRAMES];
     Texture2D exit_closed;
     Texture2D exit_open;
     Texture2D player[ANIMATION_FRAMES];
     Texture2D enemy[ANIMATION_FRAMES];
 } t_textures;
+
 
 // Estrutura principal do jogo
 typedef struct s_game {
@@ -117,6 +128,10 @@ typedef struct s_game {
     t_player player;
     t_enemy *enemies;
     int enemyCount;
+
+    t_collectible *collectibles;
+    int collectibleCount;
+
     GameState state;
     t_timer timer;
     int currentLevel;
@@ -126,6 +141,7 @@ typedef struct s_game {
     bool exitOpen;
     Font font;
 } t_game;
+
 
 // ==================== FUNÇÕES DE MAPA (maps_function.c) ====================
 bool    map_load(t_map *map, const char *filename);

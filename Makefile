@@ -9,7 +9,7 @@ INCLUDES = -I./includes -I./raylib/include
 # Raylib para Windows
 RAYLIB_PATH = ./raylib
 RAYLIB_INCLUDE = -I$(RAYLIB_PATH)/include
-RAYLIB_LIB = -L$(RAYLIB_PATH)/lib -lraylib -lopengl32 -lgdi32 -lwinmm
+RAYLIB_LIB = -L$(RAYLIB_PATH)/lib -lraylib -lopengl32 -lgdi32 -lwinmm -lkernel32 -luser32
 
 # Diretórios
 SRC_DIR = sources
@@ -21,7 +21,7 @@ SRCS =	$(SRC_DIR)/animation.c \
 		$(SRC_DIR)/check.c \
 		$(SRC_DIR)/enemy_funct.c \
 		$(SRC_DIR)/imgs.c \
-		$(SRC_DIR)/maps_function.c \
+		$(SRC_DIR)/maps_funct.c \
 		$(SRC_DIR)/move.c \
 		$(SRC_DIR)/render.c \
 		$(SRC_DIR)/so_long.c \
@@ -39,7 +39,7 @@ $(OBJ_DIR):
 
 $(NAME): $(OBJS)
 	@echo Linking $(NAME)...
-	@$(CC) $(OBJS) $(RAYLIB_LIB) -o $(NAME)
+	@$(CC) $(OBJS) $(RAYLIB_LIB) -o $(NAME) -Wl,--subsystem,console
 	@echo Done!
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c

@@ -125,7 +125,7 @@ void load_textures(t_game *game) {
     
     game->textures.wall = load_texture_safe("assets/wall.png", DARKGRAY, TILE_SIZE, TILE_SIZE);
     game->textures.floor = load_texture_safe("assets/floor.png", LIGHTGRAY, TILE_SIZE, TILE_SIZE);
-    game->textures.exit_closed = load_texture_safe("assets/exit_closed.png", GRAY, TILE_SIZE - 10, TILE_SIZE - 10);
+    game->textures.exit_closed = load_texture_safe("assets/exit_close.png", GRAY, TILE_SIZE - 10, TILE_SIZE - 10);
     game->textures.exit_open = load_texture_safe("assets/exit_open.png", GREEN, TILE_SIZE - 10, TILE_SIZE - 10);
     
     load_collectible_textures(game);
