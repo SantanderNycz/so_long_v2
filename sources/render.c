@@ -42,27 +42,33 @@ void render_map(t_game *game) {
     }
 }
 
-void render_entities(t_game *game) {
-    if (!game)
-        return;
-    
-    // Renderizar inimigos
-    for (int i = 0; i < game->enemyCount; i++) {
-        if (game->enemies[i].active) {
-            int screenX = game->enemies[i].pos.x * TILE_SIZE + 5;
-            int screenY = game->enemies[i].pos.y * TILE_SIZE + 5;
-            
-            // Desenhar sprite do inimigo
-            animation_draw(&game->enemies[i].animation, screenX, screenY);
+
+void render_entities(t_game *game)
+{
+    // Desenhar inimigos
+    for (int i = 0; i < game->enemyCount; i++)
+    {
+        DrawTexture(game->textures.enemy[game->enemies[i].animation.currentFrame],
+                    game->enemies[i].pos.x * TILE_SIZE,
+                    game->enemies[i].pos.y * TILE_SIZE, WHITE);
+    }
+
+    // Desenhar coletáveis
+    for (int i = 0; i < game->collectibleCount; i++)
+    {
+        if (!game->collectibles[i].collected)
+        {
+            int frame = game->collectibles[i].currentFrame;
+            DrawTexture(game->textures.collectible[frame],
+                        game->collectibles[i].pos.x * TILE_SIZE + 10,
+                        game->collectibles[i].pos.y * TILE_SIZE + 10, WHITE);
         }
     }
-    
-    // Renderizar jogador
-    int playerScreenX = game->player.pos.x * TILE_SIZE + 5;
-    int playerScreenY = game->player.pos.y * TILE_SIZE + 5;
-    
-    // Desenhar sprite do jogador
-    animation_draw(&game->player.animation, playerScreenX, playerScreenY);
+
+    // Desenhar jogador
+    DrawTexture(game->textures.player[game->player.animation.currentFrame],
+                game->player.pos.x * TILE_SIZE,
+                game->player.pos.y * TILE_SIZE, WHITE);
 }
 
 void render_game(t_game *game) {
